@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Tweet Automation Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">News Tweet Automation Dashboard</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Logs Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Real-time Logs</h2>
+                <div id="logs" class="h-96 overflow-y-auto space-y-2">
+                    <!-- Logs will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- Generated Tweets Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Generated Tweets</h2>
+                <div id="tweets" class="h-96 overflow-y-auto space-y-4">
+                    <!-- Tweets will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const logsContainer = document.getElementById('logs');
+        const tweetsContainer = document.getElementById('tweets');
+
+        // Load initial data
+        fetch('/get_logs')
+            .then(response => response.json())
+            .then(logs => {
+                logs.forEach(log => addLogEntry(log));
+            });
+
+        fetch('/get_tweets')
+            .then(response => response.json())
+            .then(tweets => {
+                tweets.forEach(tweet => addTweetEntry(tweet));
+            });
+
+        // Handle real-time updates
+        socket.on('log_update', (log) => {
+            addLogEntry(log);
+        });
+
+        socket.on('tweet_update', (tweet) => {
+            addTweetEntry(tweet);
+        });
+
+        function addLogEntry(log) {
+            const logElement = document.createElement('div');
+            logElement.className = `p-2 rounded ${getLogLevelClass(log.level)}`;
+            logElement.innerHTML = `
+                <span class="text-sm text-gray-600">${log.timestamp}</span>
+                <span class="ml-2">${log.message}</span>
+            `;
+            logsContainer.insertBefore(logElement, logsContainer.firstChild);
+        }
+
+        function addTweetEntry(tweet) {
+            const tweetElement = document.createElement('div');
+            tweetElement.className = 'bg-blue-50 p-4 rounded-lg';
+            tweetElement.innerHTML = `
+                <div class="text-sm text-gray-600 mb-2">
+                    ${tweet.timestamp} - Article: ${tweet.article_title}
+                </div>
+                <div class="text-gray-800">${tweet.content}</div>
+            `;
+            tweetsContainer.insertBefore(tweetElement, tweetsContainer.firstChild);
+        }
+
+        function getLogLevelClass(level) {
+            switch (level.toLowerCase()) {
+                case 'error':
+                    return 'bg-red-100';
+                case 'warning':
+                    return 'bg-yellow-100';
+                case 'info':
+                    return 'bg-green-100';
+                default:
+                    return 'bg-gray-100';
+            }
+        }
+    </script>
+</body>
+</html>
